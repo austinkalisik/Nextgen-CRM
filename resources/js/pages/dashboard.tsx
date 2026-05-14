@@ -1,150 +1,208 @@
 import { Head, Link } from '@inertiajs/react';
-import { Building2, Globe2, ShieldCheck, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import type { DomainHostingRequest } from '@/types';
+import { FileText, Globe2, HelpCircle, Users, UserX } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import type { Customer } from '@/types';
 
 type Props = {
     metrics: {
         customers: number;
-        activeCustomers: number;
-        openRequests: number;
-        users: number;
+        domains: number;
+        suspendedCustomers: number;
+        supportRequests: number;
+        domainRegistrations: number;
     };
-    recentRequests: DomainHostingRequest[];
+    customers: Customer[];
 };
 
-const serviceMix = [
-    ['Domain Hosting', 'Plans, .pg registration, cPanel, renewals'],
-    ['Email Security', 'POP3 accounts, spam and virus protection'],
-    ['ISP & Networks', 'Fiber, VSAT, structured cabling'],
-    ['Security', 'AI CCTV, access control, monitoring'],
-    ['Digital Systems', 'Dokmee, websites, app development'],
-];
+export default function Dashboard({ metrics, customers }: Props) {
+    const [search, setSearch] = useState('');
+    const [pageSize, setPageSize] = useState(25);
+    const [collapsed, setCollapsed] = useState(false);
 
-const statusVariant = (status: string) =>
-    ['completed', 'approved'].includes(status) ? 'default' : 'secondary';
+    const rows = useMemo(
+        () =>
+            customers
+                .filter((customer) =>
+                    [
+                        customer.company_name,
+                        customer.contact_name,
+                        customer.email,
+                        customer.phone ?? '',
+                        customer.status,
+                    ]
+                        .join(' ')
+                        .toLowerCase()
+                        .includes(search.toLowerCase()),
+                )
+                .slice(0, pageSize),
+        [customers, pageSize, search],
+    );
 
-export default function Dashboard({ metrics, recentRequests }: Props) {
     return (
         <>
-            <Head title="Dashboard" />
-            <div className="flex flex-col gap-4 p-4">
-                <div className="rounded-lg border bg-card/80 p-5 shadow-2xl shadow-black/20">
-                    <h1 className="text-3xl font-semibold tracking-tight">
-                        NextGen CRM
-                    </h1>
-                    <p className="max-w-3xl text-sm text-muted-foreground">
-                        Premium operations hub for Papua New Guinea domain hosting, email protection, ISP, CCTV, document management, web development, quotes, renewals, and support.
-                    </p>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-4">
-                    <Metric title="Customers" value={metrics.customers} icon={Building2} />
-                    <Metric title="Active Customers" value={metrics.activeCustomers} icon={Building2} />
-                    <Metric title="Open Requests" value={metrics.openRequests} icon={Globe2} />
-                    <Metric title="Users" value={metrics.users} icon={Users} />
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between gap-4">
-                            <div>
-                                <CardTitle>Recent Service Requests</CardTitle>
-                                <CardDescription>
-                                    Latest hosting, security, ISP, document, and development work.
-                                </CardDescription>
-                            </div>
-                            <Button asChild size="sm">
-                                <Link href="/hosting-requests">Manage</Link>
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b text-left text-muted-foreground">
-                                            <th className="py-2 font-medium">Customer</th>
-                                            <th className="py-2 font-medium">Domain/Asset</th>
-                                            <th className="py-2 font-medium">Service</th>
-                                            <th className="py-2 font-medium">Status</th>
-                                            <th className="py-2 text-right font-medium">Quote</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {recentRequests.map((request) => (
-                                            <tr key={request.id} className="border-b last:border-0">
-                                                <td className="py-3">{request.customer?.company_name}</td>
-                                                <td className="py-3 font-medium">{request.domain_name}</td>
-                                                <td className="py-3">{request.service_type.replaceAll('_', ' ')}</td>
-                                                <td className="py-3">
-                                                    <Badge variant={statusVariant(request.status)}>
-                                                        {request.status.replaceAll('_', ' ')}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-3 text-right">
-                                                    {request.quoted_amount ? `PGK ${request.quoted_amount}` : 'Pending'}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>NextGen Service Desk</CardTitle>
-                            <CardDescription>Operational coverage for the full ICT portfolio.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-3">
-                            {serviceMix.map(([name, description]) => (
-                                <div key={name} className="flex gap-3 rounded-md border bg-secondary/40 p-3">
-                                    <ShieldCheck className="mt-0.5 text-primary" />
-                                    <div>
-                                        <div className="font-medium">{name}</div>
-                                        <div className="text-xs text-muted-foreground">{description}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                </div>
+            <Head title="Administration Dashboard" />
+            <div className="legacy-stat-grid five">
+                <Stat
+                    color="teal"
+                    title="Total Customers"
+                    value={metrics.customers}
+                    icon={Users}
+                    href="/customers"
+                />
+                <Stat
+                    color="sky"
+                    title="Total Domains"
+                    value={metrics.domains}
+                    icon={Globe2}
+                    href="/hosting-requests"
+                />
+                <Stat
+                    color="red"
+                    title="Total Suspended Customers"
+                    value={metrics.suspendedCustomers}
+                    icon={UserX}
+                    href="/customers"
+                />
+                <Stat
+                    color="blue"
+                    title="New Support Requests"
+                    value={metrics.supportRequests}
+                    icon={HelpCircle}
+                    href="/support-requests"
+                />
+                <Stat
+                    color="cyan"
+                    title="New Domain Registrations"
+                    value={metrics.domainRegistrations}
+                    icon={FileText}
+                    href="/domain-registrations"
+                />
             </div>
+
+            <section className="legacy-panel">
+                <div className="legacy-panel-title">
+                    <span>Customer Listing</span>
+                    <div className="legacy-panel-tools">
+                        <button
+                            type="button"
+                            className="minimize"
+                            aria-label="Collapse customer listing"
+                            onClick={() => setCollapsed((value) => !value)}
+                        />
+                        <Link href="/customers" aria-label="Open customers" />
+                    </div>
+                </div>
+                <div
+                    className={
+                        collapsed
+                            ? 'legacy-panel-body hidden'
+                            : 'legacy-panel-body'
+                    }
+                >
+                    <div className="legacy-table-toolbar">
+                        <label>
+                            Show{' '}
+                            <select
+                                value={pageSize}
+                                onChange={(event) =>
+                                    setPageSize(Number(event.target.value))
+                                }
+                            >
+                                <option>25</option>
+                                <option>50</option>
+                            </select>{' '}
+                            entries
+                        </label>
+                        <label>
+                            Search:{' '}
+                            <input
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                            />
+                        </label>
+                    </div>
+                    {rows.length === 0 && (
+                        <p className="legacy-empty-line">No Customers Found!</p>
+                    )}
+                    <table className="legacy-table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Customer Contact</th>
+                                <th>Domains</th>
+                                <th>Host Location</th>
+                                <th>Plan</th>
+                                <th>Account Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="legacy-loading">
+                                        No data available in table
+                                    </td>
+                                </tr>
+                            ) : (
+                                rows.map((customer) => (
+                                    <tr key={customer.id}>
+                                        <td>
+                                            <Link href="/customers">
+                                                {customer.company_name}
+                                            </Link>
+                                        </td>
+                                        <td>{customer.contact_name}</td>
+                                        <td>
+                                            {customer.website ??
+                                                customer.email.split('@')[1] ??
+                                                '-'}
+                                        </td>
+                                        <td>
+                                            {customer.address ?? 'Port Moresby'}
+                                        </td>
+                                        <td>
+                                            {customer.industry ?? 'Hosting'}
+                                        </td>
+                                        <td>{customer.status}</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </>
     );
 }
 
-function Metric({
+function Stat({
     title,
     value,
     icon: Icon,
+    color,
+    href,
 }: {
     title: string;
     value: number;
     icon: React.ElementType;
+    color: string;
+    href: string;
 }) {
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
-                <CardDescription>{title}</CardDescription>
-                <Icon className="text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-3xl font-semibold">{value}</div>
-            </CardContent>
-        </Card>
+        <div className={`legacy-stat ${color}`}>
+            <div>
+                <span>{title}</span>
+                <strong>{value}</strong>
+            </div>
+            <Icon />
+            <Link href={href}>
+                View Detail <small>⊙</small>
+            </Link>
+        </div>
     );
 }
 
 Dashboard.layout = {
-    breadcrumbs: [{ title: 'Dashboard', href: '/dashboard' }],
+    breadcrumbs: [{ title: 'Administration Dashboard', href: '/dashboard' }],
 };

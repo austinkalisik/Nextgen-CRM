@@ -23,6 +23,13 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function create(Request $request): Response
+    {
+        abort_unless($request->user()->isStaff(), 403);
+
+        return Inertia::render('customers/create');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         abort_unless($request->user()->isStaff(), 403);

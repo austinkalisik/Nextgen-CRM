@@ -27,6 +27,58 @@ class DomainHostingRequestController extends Controller
         ]);
     }
 
+    public function support(Request $request): Response
+    {
+        abort_unless($request->user()->isStaff(), 403);
+
+        $requests = DomainHostingRequest::with(['customer:id,company_name,contact_name'])
+            ->latest()
+            ->get()
+            ->map(fn (DomainHostingRequest $request) => [
+                'id' => $request->id,
+                'sr_number' => now()->format('ymd').str_pad((string) $request->id, 3, '0', STR_PAD_LEFT),
+                'date_received' => optional($request->created_at)->format('d/m/Y'),
+                'subject' => str_replace('_', '-', $request->service_type),
+                'contact_name' => $request->customer?->contact_name ?? 'Jerome Natividad',
+                'status' => match ($request->status) {
+                    'completed' => 'Resolved',
+                    'cancelled' => 'Rejected',
+                    default => 'Open',
+                },
+                'read' => 'Yes',
+            ]);
+
+        return Inertia::render('support/index', [
+            'requests' => $requests,
+        ]);
+    }
+
+    public function registrations(Request $request): Response
+    {
+        abort_unless($request->user()->isStaff(), 403);
+
+        $registrations = DomainHostingRequest::with('customer:id,company_name,contact_name')
+            ->where('service_type', 'domain_registration')
+            ->latest()
+            ->get()
+            ->map(fn (DomainHostingRequest $request) => [
+                'id' => $request->id,
+                'domain_name' => $request->domain_name,
+                'company_name' => $request->customer?->company_name ?? 'Unknown',
+                'contact_name' => $request->customer?->contact_name ?? 'Unknown',
+                'status' => match ($request->status) {
+                    'completed' => 'Closed',
+                    'cancelled' => 'Cancelled',
+                    default => 'Open',
+                },
+                'read' => 'Yes',
+            ]);
+
+        return Inertia::render('registrations/index', [
+            'registrations' => $registrations,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);

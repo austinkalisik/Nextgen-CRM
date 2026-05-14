@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Crm;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,44 @@ class UserManagementController extends Controller
             'users' => User::with('customer:id,company_name')->latest()->get(),
             'customers' => Customer::orderBy('company_name')->get(['id', 'company_name']),
         ]);
+    }
+
+    public function legacySettings(Request $request): Response
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        return Inertia::render('admin-settings/index', [
+            'users' => User::whereIn('role', ['admin', 'staff'])->latest()->get(),
+            'settings' => [
+                'email_from_address' => SystemSetting::getValue('email_from_address', config('mail.from.address', 'support@nextgenpng.net')),
+                'email_from_name' => SystemSetting::getValue('email_from_name', config('mail.from.name', 'NextGen Support')),
+                'mail_host' => SystemSetting::getValue('mail_host', config('mail.mailers.smtp.host', 'mail.nextgenpng.net')),
+                'mail_port' => SystemSetting::getValue('mail_port', (string) config('mail.mailers.smtp.port', 25)),
+                'send_email_user_ids' => json_decode(SystemSetting::getValue('send_email_user_ids', '[]') ?? '[]', true),
+            ],
+        ]);
+    }
+
+    public function updateLegacySettings(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+
+        $data = $request->validate([
+            'email_from_address' => ['required', 'email', 'max:255'],
+            'email_from_name' => ['required', 'string', 'max:255'],
+            'mail_host' => ['required', 'string', 'max:255'],
+            'mail_port' => ['required', 'integer', 'min:1', 'max:65535'],
+            'send_email_user_ids' => ['array'],
+            'send_email_user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        foreach (['email_from_address', 'email_from_name', 'mail_host', 'mail_port'] as $key) {
+            SystemSetting::setValue($key, (string) $data[$key]);
+        }
+
+        SystemSetting::setValue('send_email_user_ids', json_encode($data['send_email_user_ids'] ?? []));
+
+        return back()->with('success', 'Admin settings saved.');
     }
 
     public function store(Request $request): RedirectResponse
