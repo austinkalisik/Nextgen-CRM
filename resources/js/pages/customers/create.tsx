@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Star } from 'lucide-react';
 import type { FormEvent } from 'react';
+import InputError from '@/components/input-error';
 
 const emptyCustomer = {
     company_name: '',
@@ -12,14 +13,51 @@ const emptyCustomer = {
     website: '',
     address: '',
     notes: '',
+    hosting_start_date: '',
     next_follow_up_at: '',
 };
+
+const minDate = '2000-01-01';
+const maxDate = '2099-12-31';
 
 export default function AddCustomer() {
     const form = useForm({ ...emptyCustomer });
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
+        form.clearErrors('hosting_start_date', 'next_follow_up_at');
+
+        if (!isValidDateValue(form.data.hosting_start_date)) {
+            form.setError(
+                'hosting_start_date',
+                'Enter a valid start date between 2000 and 2099.',
+            );
+
+            return;
+        }
+
+        if (!isValidDateValue(form.data.next_follow_up_at)) {
+            form.setError(
+                'next_follow_up_at',
+                'Enter a valid renewal date between 2000 and 2099.',
+            );
+
+            return;
+        }
+
+        if (
+            form.data.hosting_start_date &&
+            form.data.next_follow_up_at &&
+            form.data.next_follow_up_at < form.data.hosting_start_date
+        ) {
+            form.setError(
+                'next_follow_up_at',
+                'Renewal date must be on or after the start date.',
+            );
+
+            return;
+        }
+
         form.post('/customers', { preserveScroll: true });
     };
 
@@ -101,41 +139,52 @@ export default function AddCustomer() {
                         <section>
                             <h2>Plan Details</h2>
                             <div className="legacy-customer-type">
-                                <Field label="Customer Type">
-                                    <label>
-                                        <input type="checkbox" defaultChecked />{' '}
-                                        Current Customer
-                                    </label>
-                                    <label>
-                                        <input type="checkbox" /> Complimentary
-                                    </label>
-                                </Field>
-                                <Field label="OWA Customer">
-                                    <label>
-                                        <input name="owa" type="radio" /> Yes
-                                    </label>
-                                    <label>
-                                        <input
-                                            name="owa"
-                                            type="radio"
-                                            defaultChecked
-                                        />{' '}
-                                        No
-                                    </label>
-                                </Field>
-                                <Field label="OWA-A Customer">
-                                    <label>
-                                        <input name="owaa" type="radio" /> Yes
-                                    </label>
-                                    <label>
-                                        <input
-                                            name="owaa"
-                                            type="radio"
-                                            defaultChecked
-                                        />{' '}
-                                        No
-                                    </label>
-                                </Field>
+                                <OptionGroup
+                                    label="Customer Type"
+                                    options={[
+                                        {
+                                            label: 'Current Customer',
+                                            type: 'checkbox',
+                                            defaultChecked: true,
+                                        },
+                                        {
+                                            label: 'Complimentary',
+                                            type: 'checkbox',
+                                        },
+                                    ]}
+                                />
+                                <OptionGroup
+                                    label="OWA Customer"
+                                    options={[
+                                        {
+                                            label: 'Yes',
+                                            type: 'radio',
+                                            name: 'owa',
+                                        },
+                                        {
+                                            label: 'No',
+                                            type: 'radio',
+                                            name: 'owa',
+                                            defaultChecked: true,
+                                        },
+                                    ]}
+                                />
+                                <OptionGroup
+                                    label="OWA-A Customer"
+                                    options={[
+                                        {
+                                            label: 'Yes',
+                                            type: 'radio',
+                                            name: 'owaa',
+                                        },
+                                        {
+                                            label: 'No',
+                                            type: 'radio',
+                                            name: 'owaa',
+                                            defaultChecked: true,
+                                        },
+                                    ]}
+                                />
                             </div>
                             <Field label="Hosting Plan">
                                 <select
@@ -150,15 +199,34 @@ export default function AddCustomer() {
                                     <option>Premium</option>
                                 </select>
                             </Field>
-                            <Field label="Start Date">
+                            <Field
+                                label="Start Date"
+                                error={form.errors.hosting_start_date}
+                            >
                                 <input
-                                    type="text"
+                                    type="date"
+                                    min={minDate}
+                                    max={maxDate}
+                                    value={form.data.hosting_start_date}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'hosting_start_date',
+                                            e.target.value,
+                                        )
+                                    }
                                     placeholder="Hosting Start Date"
                                 />
                             </Field>
-                            <Field label="Renewal Date">
+                            <Field
+                                label="Renewal Date"
+                                error={form.errors.next_follow_up_at}
+                            >
                                 <input
                                     type="date"
+                                    min={
+                                        form.data.hosting_start_date || minDate
+                                    }
+                                    max={maxDate}
                                     value={form.data.next_follow_up_at}
                                     onChange={(e) =>
                                         form.setData(
@@ -205,16 +273,58 @@ export default function AddCustomer() {
 
 function Field({
     label,
+    error,
     children,
 }: {
     label: string;
+    error?: string;
     children: React.ReactNode;
 }) {
     return (
         <label className="legacy-field">
             <span>{label}</span>
             {children}
+            <InputError message={error} />
         </label>
+    );
+}
+
+function isValidDateValue(value: string) {
+    if (!value) {
+        return true;
+    }
+
+    return value >= minDate && value <= maxDate;
+}
+
+function OptionGroup({
+    label,
+    options,
+}: {
+    label: string;
+    options: {
+        label: string;
+        type: 'checkbox' | 'radio';
+        name?: string;
+        defaultChecked?: boolean;
+    }[];
+}) {
+    return (
+        <fieldset className="legacy-option-group">
+            <legend>{label}</legend>
+            <div>
+                {options.map((option) => (
+                    <label key={`${option.name ?? label}-${option.label}`}>
+                        <input
+                            type={option.type}
+                            name={option.name}
+                            defaultChecked={option.defaultChecked}
+                        />
+                        <span>{option.label}</span>
+                    </label>
+                ))}
+            </div>
+        </fieldset>
     );
 }
 

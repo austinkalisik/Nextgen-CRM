@@ -54,7 +54,7 @@ export default function Dashboard({ metrics, customers }: Props) {
                     title="Total Domains"
                     value={metrics.domains}
                     icon={Globe2}
-                    href="/hosting-requests"
+                    href="/domains"
                 />
                 <Stat
                     color="red"

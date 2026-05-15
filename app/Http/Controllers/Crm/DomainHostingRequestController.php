@@ -31,21 +31,25 @@ class DomainHostingRequestController extends Controller
     {
         abort_unless($request->user()->isStaff(), 403);
 
-        $requests = DomainHostingRequest::with(['customer:id,company_name,contact_name'])
+        $requests = DomainHostingRequest::with(['customer:id,company_name,contact_name', 'assignee:id,name'])
+            ->supportServices()
             ->latest()
             ->get()
             ->map(fn (DomainHostingRequest $request) => [
                 'id' => $request->id,
                 'sr_number' => now()->format('ymd').str_pad((string) $request->id, 3, '0', STR_PAD_LEFT),
                 'date_received' => optional($request->created_at)->format('d/m/Y'),
-                'subject' => str_replace('_', '-', $request->service_type),
+                'subject' => str_replace('_', ' ', $request->service_type),
+                'domain_name' => $request->domain_name,
                 'contact_name' => $request->customer?->contact_name ?? 'Jerome Natividad',
+                'assignee_name' => $request->assignee?->name ?? 'Unassigned',
                 'status' => match ($request->status) {
                     'completed' => 'Resolved',
                     'cancelled' => 'Rejected',
                     default => 'Open',
                 },
                 'read' => 'Yes',
+                'href' => route('support-requests.show', $request),
             ]);
 
         return Inertia::render('support/index', [
@@ -58,7 +62,7 @@ class DomainHostingRequestController extends Controller
         abort_unless($request->user()->isStaff(), 403);
 
         $registrations = DomainHostingRequest::with('customer:id,company_name,contact_name')
-            ->where('service_type', 'domain_registration')
+            ->domainRegistrations()
             ->latest()
             ->get()
             ->map(fn (DomainHostingRequest $request) => [
@@ -72,10 +76,23 @@ class DomainHostingRequestController extends Controller
                     default => 'Open',
                 },
                 'read' => 'Yes',
+                'href' => route('domain-registrations.show', $request),
             ]);
 
         return Inertia::render('registrations/index', [
             'registrations' => $registrations,
+        ]);
+    }
+
+    public function show(Request $request, DomainHostingRequest $hostingRequest): Response
+    {
+        abort_unless($request->user()->isStaff(), 403);
+
+        $hostingRequest->load(['customer', 'assignee:id,name,email']);
+
+        return Inertia::render('support/show', [
+            'request' => $hostingRequest,
+            'srNumber' => now()->format('ymd').str_pad((string) $hostingRequest->id, 3, '0', STR_PAD_LEFT),
         ]);
     }
 

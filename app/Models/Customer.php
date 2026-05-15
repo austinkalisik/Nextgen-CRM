@@ -39,4 +39,9 @@ class Customer extends Model
     {
         return $this->hasMany(DomainHostingRequest::class);
     }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(CustomerSubscription::class);
+    }
 }

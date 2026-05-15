@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Customer;
 use App\Models\DomainHostingRequest;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,17 +43,42 @@ class HandleInertiaRequests extends Middleware
 
         if ($request->user()?->isStaff()) {
             $openSupportRequests = DomainHostingRequest::query()
-                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->supportServices()
+                ->open()
                 ->count();
             $openDomainRegistrations = DomainHostingRequest::query()
-                ->where('service_type', 'domain_registration')
-                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->domainRegistrations()
+                ->open()
                 ->count();
         }
+
+        $latestNotifications = $request->user()?->isStaff()
+            ? DomainHostingRequest::query()
+                ->with('customer:id,company_name')
+                ->where(function ($query) {
+                    $query->supportServices()->orWhere(fn ($query) => $query->domainRegistrations());
+                })
+                ->open()
+                ->latest()
+                ->limit(6)
+                ->get()
+                ->map(fn (DomainHostingRequest $supportRequest) => [
+                    'id' => $supportRequest->id,
+                    'title' => $supportRequest->domain_name,
+                    'customer' => $supportRequest->customer?->company_name ?? 'Unknown customer',
+                    'status' => $supportRequest->status,
+                    'href' => route('support-requests.show', $supportRequest),
+                ])
+                ->values()
+            : collect();
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'brand' => [
+                'name' => SystemSetting::getValue('brand_name', config('app.name')),
+                'logo_url' => SystemSetting::getValue('brand_logo_url'),
+            ],
             'auth' => [
                 'user' => $request->user(),
             ],
@@ -61,6 +87,7 @@ class HandleInertiaRequests extends Middleware
                 'openSupportRequests' => $openSupportRequests,
                 'openDomainRegistrations' => $openDomainRegistrations,
                 'notifications' => $openSupportRequests + $openDomainRegistrations,
+                'latestNotifications' => $latestNotifications,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

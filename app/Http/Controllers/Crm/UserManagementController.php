@@ -8,6 +8,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,7 +36,11 @@ class UserManagementController extends Controller
                 'email_from_name' => SystemSetting::getValue('email_from_name', config('mail.from.name', 'NextGen Support')),
                 'mail_host' => SystemSetting::getValue('mail_host', config('mail.mailers.smtp.host', 'mail.nextgenpng.net')),
                 'mail_port' => SystemSetting::getValue('mail_port', (string) config('mail.mailers.smtp.port', 25)),
+                'mail_scheme' => SystemSetting::getValue('mail_scheme', (string) config('mail.mailers.smtp.scheme', 'smtp')),
+                'mail_username' => SystemSetting::getValue('mail_username', (string) config('mail.mailers.smtp.username', '')),
                 'send_email_user_ids' => json_decode(SystemSetting::getValue('send_email_user_ids', '[]') ?? '[]', true),
+                'brand_name' => SystemSetting::getValue('brand_name', config('app.name')),
+                'brand_logo_url' => SystemSetting::getValue('brand_logo_url', ''),
             ],
         ]);
     }
@@ -49,15 +54,33 @@ class UserManagementController extends Controller
             'email_from_name' => ['required', 'string', 'max:255'],
             'mail_host' => ['required', 'string', 'max:255'],
             'mail_port' => ['required', 'integer', 'min:1', 'max:65535'],
+            'mail_scheme' => ['nullable', Rule::in(['', 'smtp', 'smtps'])],
+            'mail_username' => ['nullable', 'string', 'max:255'],
+            'mail_password' => ['nullable', 'string', 'max:255'],
             'send_email_user_ids' => ['array'],
             'send_email_user_ids.*' => ['integer', 'exists:users,id'],
+            'brand_name' => ['required', 'string', 'max:80'],
+            'brand_logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        foreach (['email_from_address', 'email_from_name', 'mail_host', 'mail_port'] as $key) {
-            SystemSetting::setValue($key, (string) $data[$key]);
+        SystemSetting::setValue('email_from_address', (string) $data['email_from_address']);
+        SystemSetting::setValue('email_from_name', (string) $data['email_from_name']);
+        SystemSetting::setValue('mail_host', (string) $data['mail_host']);
+        SystemSetting::setValue('mail_port', (string) $data['mail_port']);
+        SystemSetting::setValue('mail_scheme', (string) ($data['mail_scheme'] ?? 'smtp'));
+        SystemSetting::setValue('mail_username', (string) ($data['mail_username'] ?? ''));
+
+        if (filled($data['mail_password'] ?? null)) {
+            SystemSetting::setValue('mail_password', (string) $data['mail_password']);
         }
 
         SystemSetting::setValue('send_email_user_ids', json_encode($data['send_email_user_ids'] ?? []));
+        SystemSetting::setValue('brand_name', $data['brand_name']);
+
+        if ($request->hasFile('brand_logo')) {
+            $path = $request->file('brand_logo')->store('branding', 'public');
+            SystemSetting::setValue('brand_logo_url', Storage::disk('public')->url($path));
+        }
 
         return back()->with('success', 'Admin settings saved.');
     }

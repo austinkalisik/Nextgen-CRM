@@ -11,23 +11,36 @@ type Props = {
         email_from_name: string;
         mail_host: string;
         mail_port: string;
+        mail_scheme: string;
+        mail_username: string;
         send_email_user_ids: number[];
+        brand_name: string;
+        brand_logo_url: string;
     };
 };
 
 export default function AdminSettings({ users, settings }: Props) {
     const [collapsed, setCollapsed] = useState(false);
     const form = useForm({
+        _method: 'patch',
         email_from_address: settings.email_from_address,
         email_from_name: settings.email_from_name,
         mail_host: settings.mail_host,
         mail_port: settings.mail_port,
+        mail_scheme: settings.mail_scheme ?? 'smtp',
+        mail_username: settings.mail_username ?? '',
+        mail_password: '',
         send_email_user_ids: settings.send_email_user_ids ?? [],
+        brand_name: settings.brand_name,
+        brand_logo: null as File | null,
     });
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        form.patch('/admin-settings', { preserveScroll: true });
+        form.post('/admin-settings', {
+            forceFormData: true,
+            preserveScroll: true,
+        });
     };
 
     const toggleSendEmail = (userId: number, checked: boolean) => {
@@ -148,6 +161,47 @@ export default function AdminSettings({ users, settings }: Props) {
                         </table>
                     </section>
                     <section>
+                        <h2>Header Branding</h2>
+                        <p>
+                            These details control the sidebar and page header
+                            shown to staff users.
+                        </p>
+                        <label>
+                            System Name
+                            <input
+                                value={form.data.brand_name}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'brand_name',
+                                        event.target.value,
+                                    )
+                                }
+                                required
+                            />
+                        </label>
+                        <label>
+                            Logo Image
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(event) =>
+                                    form.setData(
+                                        'brand_logo',
+                                        event.target.files?.[0] ?? null,
+                                    )
+                                }
+                            />
+                        </label>
+                        {settings.brand_logo_url && (
+                            <div className="legacy-brand-preview">
+                                <img
+                                    src={settings.brand_logo_url}
+                                    alt={settings.brand_name}
+                                />
+                            </div>
+                        )}
+                    </section>
+                    <section>
                         <h2>Email Settings</h2>
                         <p>
                             These details are used for any automated email
@@ -191,6 +245,49 @@ export default function AdminSettings({ users, settings }: Props) {
                                     )
                                 }
                                 required
+                            />
+                        </label>
+                        <label>
+                            SMTP Security
+                            <select
+                                value={form.data.mail_scheme}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'mail_scheme',
+                                        event.target.value,
+                                    )
+                                }
+                            >
+                                <option value="">None</option>
+                                <option value="smtp">STARTTLS / SMTP</option>
+                                <option value="smtps">SSL / SMTPS</option>
+                            </select>
+                        </label>
+                        <label>
+                            SMTP Username
+                            <input
+                                value={form.data.mail_username}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'mail_username',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="mailbox username"
+                            />
+                        </label>
+                        <label>
+                            SMTP Password
+                            <input
+                                type="password"
+                                value={form.data.mail_password}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'mail_password',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="Leave blank to keep existing password"
                             />
                         </label>
                         <label>

@@ -1,22 +1,38 @@
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import InputError from '@/components/input-error';
 
 type Result = { email: string; valid: boolean };
+type SendSummary = { sent: number; skipped: number } | null;
 
 export default function BulkEmailValidator({
     results,
     input,
+    subject,
+    message,
+    sendSummary,
 }: {
     results: Result[];
     input: string;
+    subject: string;
+    message: string;
+    sendSummary?: SendSummary;
 }) {
-    const form = useForm({ emails: input ?? '' });
+    const form = useForm({
+        emails: input ?? '',
+        subject: subject ?? '',
+        message: message ?? '',
+    });
     const [collapsed, setCollapsed] = useState(false);
 
-    const submit = (event: FormEvent) => {
+    const validate = (event: FormEvent) => {
         event.preventDefault();
         form.post('/bulk-email-validator', { preserveScroll: true });
+    };
+
+    const send = () => {
+        form.post('/bulk-email-validator/send', { preserveScroll: true });
     };
 
     return (
@@ -41,7 +57,7 @@ export default function BulkEmailValidator({
                     </div>
                 </div>
                 <form
-                    onSubmit={submit}
+                    onSubmit={validate}
                     className={
                         collapsed
                             ? 'legacy-panel-body legacy-email-tool hidden'
@@ -61,14 +77,55 @@ export default function BulkEmailValidator({
                             and advise which ones are incorrect
                         </p>
                     </div>
+                    <div className="legacy-email-send-fields">
+                        <label>
+                            Subject
+                            <input
+                                value={form.data.subject}
+                                onChange={(e) =>
+                                    form.setData('subject', e.target.value)
+                                }
+                                placeholder="Email subject"
+                            />
+                            <InputError message={form.errors.subject} />
+                        </label>
+                        <label>
+                            Message
+                            <textarea
+                                value={form.data.message}
+                                onChange={(e) =>
+                                    form.setData('message', e.target.value)
+                                }
+                                placeholder="Write the email message to send to each valid address."
+                            />
+                            <InputError message={form.errors.message} />
+                        </label>
+                    </div>
                     <textarea
                         value={form.data.emails}
                         onChange={(e) => form.setData('emails', e.target.value)}
                         placeholder="Add the list of emails here. One email per line."
                     />
-                    <button className="legacy-action-button" type="submit">
-                        Validate Emails
-                    </button>
+                    <InputError message={form.errors.emails} />
+                    <div className="legacy-email-actions">
+                        <button className="legacy-action-button" type="submit">
+                            Validate Emails
+                        </button>
+                        <button
+                            className="legacy-action-button blue"
+                            type="button"
+                            disabled={form.processing}
+                            onClick={send}
+                        >
+                            Send Email to Valid Addresses
+                        </button>
+                    </div>
+                    {sendSummary && (
+                        <div className="legacy-send-summary">
+                            Sent {sendSummary.sent} email(s). Skipped{' '}
+                            {sendSummary.skipped} invalid address(es).
+                        </div>
+                    )}
                     {results.length > 0 && (
                         <div className="legacy-results">
                             {results.map((result) => (

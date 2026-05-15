@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Ban, CheckCircle2, FileText } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -9,6 +9,7 @@ type Row = {
     contact_name: string;
     status: string;
     read: string;
+    href: string;
 };
 
 export default function RegistrationsIndex({
@@ -149,7 +150,9 @@ export default function RegistrationsIndex({
                                             <span className="legacy-plus">
                                                 +
                                             </span>
-                                            <a>{row.domain_name}</a>
+                                            <Link href={row.href}>
+                                                {row.domain_name}
+                                            </Link>
                                         </td>
                                         <td>{row.company_name}</td>
                                         <td>{row.contact_name}</td>
@@ -190,7 +193,7 @@ function MiniStat({
                 <strong>{value}</strong>
             </div>
             <Icon />
-            <a>View Detail ⊙</a>
+            <span>View Detail</span>
         </button>
     );
 }

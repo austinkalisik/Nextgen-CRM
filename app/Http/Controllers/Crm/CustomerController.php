@@ -72,7 +72,7 @@ class CustomerController extends Controller
             'website' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:5000'],
-            'next_follow_up_at' => ['nullable', 'date'],
+            'next_follow_up_at' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before_or_equal:2099-12-31'],
         ]);
     }
 }

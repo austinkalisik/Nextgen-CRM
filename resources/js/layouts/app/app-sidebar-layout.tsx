@@ -6,6 +6,7 @@ import {
     ChevronsRight,
     Circle,
     CircleHelp,
+    Layers,
     Mail,
     RefreshCw,
     Settings,
@@ -21,16 +22,28 @@ export default function AppSidebarLayout({
     breadcrumbs = [],
 }: AppLayoutProps) {
     const { auth, legacy } = usePage().props;
+    const brand = usePage().props.brand;
     const currentPath = window.location.pathname;
     const title = breadcrumbs.at(-1)?.title ?? 'Administration Dashboard';
     const [collapsed, setCollapsed] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [supportOpen, setSupportOpen] = useState(
+        currentPath.startsWith('/support-requests') ||
+            currentPath.startsWith('/domain-registrations'),
+    );
     const legacyStats = legacy as
         | {
               customers: number;
               openSupportRequests: number;
               openDomainRegistrations: number;
               notifications: number;
+              latestNotifications: {
+                  id: number;
+                  title: string;
+                  customer: string;
+                  status: string;
+                  href: string;
+              }[];
           }
         | undefined;
 
@@ -38,13 +51,13 @@ export default function AppSidebarLayout({
         <div className={collapsed ? 'legacy-app collapsed' : 'legacy-app'}>
             <aside className="legacy-sidebar">
                 <Link href="/dashboard" className="legacy-sidebar-logo">
-                    <LegacyLogo />
+                    <LegacyLogo name={brand.name} logoUrl={brand.logo_url} />
                 </Link>
 
                 <div className="legacy-user">
                     <div className="legacy-avatar" />
                     <div>
-                        <strong>Nextgen Support</strong>
+                        <strong>{brand.name}</strong>
                         <span>Support</span>
                     </div>
                 </div>
@@ -67,6 +80,12 @@ export default function AppSidebarLayout({
                         active={currentPath === '/renewals'}
                     />
                     <NavLink
+                        href="/subscriptions"
+                        label="Subscriptions"
+                        icon={Layers}
+                        active={currentPath.startsWith('/subscriptions')}
+                    />
+                    <NavLink
                         href="/add-customer"
                         label="Add Customer"
                         icon={UserPlus}
@@ -74,21 +93,24 @@ export default function AppSidebarLayout({
                     />
                     <div
                         className={
+                            supportOpen ||
                             currentPath.startsWith('/support-requests') ||
                             currentPath.startsWith('/domain-registrations')
                                 ? 'legacy-nav-parent active open'
                                 : 'legacy-nav-parent'
                         }
                     >
-                        <Link
-                            href="/support-requests"
+                        <button
+                            type="button"
                             className="legacy-nav-link"
+                            aria-expanded={supportOpen}
+                            onClick={() => setSupportOpen((value) => !value)}
                         >
                             <CircleHelp size={18} />
                             <span>Support</span>
                             <small>NEW</small>
                             <ChevronDown className="ml-auto" size={14} />
-                        </Link>
+                        </button>
                         <div className="legacy-subnav">
                             <SubLink
                                 href="/support-requests"
@@ -151,19 +173,30 @@ export default function AppSidebarLayout({
                         </button>
                         {notificationsOpen && (
                             <div className="legacy-notifications">
-                                <Link href="/support-requests">
-                                    <strong>
-                                        {legacyStats?.openSupportRequests ?? 0}
-                                    </strong>{' '}
-                                    open support request(s)
-                                </Link>
-                                <Link href="/domain-registrations">
-                                    <strong>
-                                        {legacyStats?.openDomainRegistrations ??
-                                            0}
-                                    </strong>{' '}
-                                    open domain registration(s)
-                                </Link>
+                                {(legacyStats?.latestNotifications ?? [])
+                                    .length === 0 ? (
+                                    <span className="legacy-notification-empty">
+                                        No open notifications
+                                    </span>
+                                ) : (
+                                    legacyStats?.latestNotifications.map(
+                                        (item) => (
+                                            <Link
+                                                key={item.id}
+                                                href={item.href}
+                                                onClick={() =>
+                                                    setNotificationsOpen(false)
+                                                }
+                                            >
+                                                <strong>{item.title}</strong>
+                                                <small>
+                                                    {item.customer} -{' '}
+                                                    {item.status}
+                                                </small>
+                                            </Link>
+                                        ),
+                                    )
+                                )}
                             </div>
                         )}
                         <div className="legacy-account">
@@ -188,7 +221,7 @@ export default function AppSidebarLayout({
                 <main className="legacy-page">
                     <div className="legacy-page-title">
                         <h1>
-                            NextGen <span>{title}</span>
+                            {brand.name} <span>{title}</span>
                         </h1>
                         {breadcrumbs.length > 0 && (
                             <div className="legacy-breadcrumb">

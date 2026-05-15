@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Check, HelpCircle, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -7,9 +7,12 @@ type Row = {
     sr_number: string;
     date_received: string;
     subject: string;
+    domain_name: string;
     contact_name: string;
+    assignee_name: string;
     status: string;
     read: string;
+    href: string;
 };
 
 export default function SupportIndex({ requests }: { requests: Row[] }) {
@@ -143,10 +146,19 @@ export default function SupportIndex({ requests }: { requests: Row[] }) {
                                 rows.map((row) => (
                                     <tr key={row.id}>
                                         <td>
-                                            <a>{row.sr_number}</a>
+                                            <Link href={row.href}>
+                                                {row.sr_number}
+                                            </Link>
                                         </td>
                                         <td>{row.date_received}</td>
-                                        <td>{row.subject}</td>
+                                        <td>
+                                            <Link href={row.href}>
+                                                {row.subject}
+                                            </Link>
+                                            <small className="legacy-cell-note">
+                                                {row.domain_name}
+                                            </small>
+                                        </td>
                                         <td>{row.contact_name}</td>
                                         <td>{row.status}</td>
                                         <td>{row.read}</td>
@@ -185,7 +197,7 @@ function MiniStat({
                 <strong>{value}</strong>
             </div>
             <Icon />
-            <a>View Detail ⊙</a>
+            <span>View Detail</span>
         </button>
     );
 }

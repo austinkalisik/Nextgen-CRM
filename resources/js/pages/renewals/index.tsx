@@ -3,7 +3,8 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
 type Renewal = {
-    id: number;
+    id: string;
+    record_type: 'hosting_request' | 'subscription';
     customer_name: string;
     current_renewal_date: string;
     next_renewal_date: string;

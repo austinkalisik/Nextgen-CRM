@@ -17,6 +17,7 @@ The CRM covers customer records, service requests, domain hosting, .pg registrat
 - Premium UI concept: `docs/premium-crm-concept.png`
 - ERD + wireframe: `docs/nextgen-crm-erd-wireframe.png`
 - Editable SVG version: `docs/nextgen-crm-erd-wireframe.svg`
+- Current ERD + wireframe markdown: `docs/nextgen-crm-erd-wireframe.md`
 
 ## Clone
 
