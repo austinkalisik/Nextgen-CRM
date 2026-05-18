@@ -496,6 +496,10 @@
         display: block;
     }
 
+    .legacy-app.collapsed .legacy-nav-parent.open .legacy-subnav {
+        display: none;
+    }
+
     .legacy-sub-link {
         min-height: 36px;
         padding-left: 28px;
