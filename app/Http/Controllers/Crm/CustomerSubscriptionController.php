@@ -80,7 +80,18 @@ class CustomerSubscriptionController extends Controller
             'amount' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
             'payment_reference' => ['nullable', 'string', 'max:255'],
             'invoice_number' => ['nullable', 'string', 'max:255'],
-            'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx', 'max:10240'],
+            'attachment' => [
+                'nullable',
+                'file',
+                'max:10240',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $extension = strtolower((string) $value?->getClientOriginalExtension());
+
+                    if (! in_array($extension, ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'], true)) {
+                        $fail('The attachment must be a PDF, image, Word, or Excel file.');
+                    }
+                },
+            ],
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 

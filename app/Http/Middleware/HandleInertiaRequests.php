@@ -67,7 +67,9 @@ class HandleInertiaRequests extends Middleware
                     'title' => $supportRequest->domain_name,
                     'customer' => $supportRequest->customer?->company_name ?? 'Unknown customer',
                     'status' => $supportRequest->status,
-                    'href' => route('support-requests.show', $supportRequest),
+                    'href' => $supportRequest->service_type === 'domain_registration'
+                        ? route('domain-registrations.show', $supportRequest)
+                        : route('support-requests.show', $supportRequest),
                 ])
                 ->values()
             : collect();
@@ -77,7 +79,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'brand' => [
                 'name' => SystemSetting::getValue('brand_name', config('app.name')),
-                'logo_url' => SystemSetting::getValue('brand_logo_url'),
+                'logo_url' => SystemSetting::getBrandLogoUrl(),
             ],
             'auth' => [
                 'user' => $request->user(),

@@ -4,9 +4,10 @@ import type { Customer } from '@/types';
 
 type Props = {
     customers: Customer[];
+    statusFilter: Customer['status'] | null;
 };
 
-export default function CustomersIndex({ customers }: Props) {
+export default function CustomersIndex({ customers, statusFilter }: Props) {
     const [search, setSearch] = useState('');
     const [pageSize, setPageSize] = useState(25);
     const [collapsed, setCollapsed] = useState(false);
@@ -32,17 +33,39 @@ export default function CustomersIndex({ customers }: Props) {
 
     return (
         <>
-            <Head title="Administration Dashboard" />
+            <Head
+                title={
+                    statusFilter === 'suspended'
+                        ? 'Suspended Customers'
+                        : 'Administration Dashboard'
+                }
+            />
             <section className="legacy-panel">
                 <div className="legacy-panel-title">
-                    <span>Customer Listing</span>
+                    <span>
+                        {statusFilter === 'suspended'
+                            ? 'Suspended Customer Listing'
+                            : 'Customer Listing'}
+                    </span>
                     <div className="legacy-panel-tools">
                         <button
                             type="button"
                             className="minimize"
-                            aria-label="Collapse customer listing"
+                            aria-expanded={!collapsed}
+                            aria-label={
+                                collapsed
+                                    ? 'Expand customer listing'
+                                    : 'Collapse customer listing'
+                            }
+                            title={
+                                collapsed
+                                    ? 'Expand customer listing'
+                                    : 'Collapse customer listing'
+                            }
                             onClick={() => setCollapsed((value) => !value)}
-                        />
+                        >
+                            {collapsed ? '+' : '-'}
+                        </button>
                         <Link
                             href="/add-customer"
                             aria-label="Add customer"
@@ -71,6 +94,14 @@ export default function CustomersIndex({ customers }: Props) {
                             </select>{' '}
                             entries
                         </label>
+                        {statusFilter && (
+                            <Link
+                                href="/customers"
+                                className="legacy-filter-pill"
+                            >
+                                Showing {statusFilter} customers - clear filter
+                            </Link>
+                        )}
                         <label>
                             Search:{' '}
                             <input

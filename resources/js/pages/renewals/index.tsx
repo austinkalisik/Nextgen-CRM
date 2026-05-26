@@ -1,4 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { CalendarClock, CheckSquare, RefreshCcw, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
@@ -23,6 +24,7 @@ export default function RenewalsIndex({
 }) {
     const [search, setSearch] = useState('');
     const [collapsed, setCollapsed] = useState(false);
+    const [pageSize, setPageSize] = useState(25);
     const form = useForm({
         renewals: renewals.map((renewal) => ({
             id: renewal.id,
@@ -47,6 +49,16 @@ export default function RenewalsIndex({
             ),
         [renewals, search],
     );
+    const visibleRows = rows.slice(0, pageSize);
+    const selectedCount = form.data.renewals.filter(
+        (renewal) => renewal.selected,
+    ).length;
+    const hostingCount = renewals.filter(
+        (renewal) => renewal.record_type === 'hosting_request',
+    ).length;
+    const subscriptionCount = renewals.filter(
+        (renewal) => renewal.record_type === 'subscription',
+    ).length;
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -57,19 +69,69 @@ export default function RenewalsIndex({
         router.get('/renewals', { month: value }, { preserveState: false });
     };
 
+    const setAllVisible = (selected: boolean) => {
+        const visibleIds = new Set(visibleRows.map((renewal) => renewal.id));
+
+        form.setData(
+            'renewals',
+            form.data.renewals.map((renewal) =>
+                visibleIds.has(renewal.id)
+                    ? {
+                          ...renewal,
+                          selected,
+                      }
+                    : renewal,
+            ),
+        );
+    };
+
     return (
         <>
             <Head title="Customer Renewals" />
+            <section className="legacy-renewal-summary">
+                <article>
+                    <CalendarClock size={22} />
+                    <span>Total Renewals</span>
+                    <strong>{renewals.length}</strong>
+                </article>
+                <article>
+                    <RefreshCcw size={22} />
+                    <span>Hosting / Domain</span>
+                    <strong>{hostingCount}</strong>
+                </article>
+                <article>
+                    <CheckSquare size={22} />
+                    <span>Subscriptions</span>
+                    <strong>{subscriptionCount}</strong>
+                </article>
+                <article>
+                    <CheckSquare size={22} />
+                    <span>Selected Updates</span>
+                    <strong>{selectedCount}</strong>
+                </article>
+            </section>
             <form onSubmit={submit} className="legacy-panel">
                 <div className="legacy-panel-title">
-                    <span>Customer Renewal Search</span>
+                    <span>Customer Renewal Search - {monthLabel}</span>
                     <div className="legacy-panel-tools">
                         <button
                             type="button"
                             className="minimize"
-                            aria-label="Collapse renewals"
+                            aria-expanded={!collapsed}
+                            aria-label={
+                                collapsed
+                                    ? 'Expand renewals'
+                                    : 'Collapse renewals'
+                            }
+                            title={
+                                collapsed
+                                    ? 'Expand renewals'
+                                    : 'Collapse renewals'
+                            }
                             onClick={() => setCollapsed((value) => !value)}
-                        />
+                        >
+                            {collapsed ? '+' : '-'}
+                        </button>
                         <button
                             type="button"
                             className="refresh"
@@ -86,22 +148,37 @@ export default function RenewalsIndex({
                     }
                 >
                     <div className="legacy-renewal-search">
-                        <input
-                            type="month"
-                            value={month}
-                            onChange={(event) => setMonth(event.target.value)}
-                        />
-                        <button type="button" onClick={() => setMonth(month)}>
+                        <label>
+                            <span>Month / Year</span>
+                            <input
+                                type="month"
+                                value={month}
+                                onChange={(event) =>
+                                    setMonth(event.target.value)
+                                }
+                            />
+                        </label>
+                        <button
+                            type="button"
+                            className="legacy-action-button"
+                            onClick={() => setMonth(month)}
+                        >
+                            <Search size={15} />
                             Search
                         </button>
                         <button
                             type="submit"
-                            className="blue"
+                            className="legacy-action-button blue"
                             disabled={form.processing}
                         >
+                            <CheckSquare size={15} />
                             Update Selected Customers
                         </button>
-                        <p>Click to search for invoices by Month/Year</p>
+                        <p>
+                            Search renewals by month, review the next renewal
+                            date, select the rows to update, then save the
+                            selected customers.
+                        </p>
                     </div>
                     <h2 className="legacy-centered-heading">
                         Showing Customer Renewals for {monthLabel}
@@ -109,11 +186,33 @@ export default function RenewalsIndex({
                     <div className="legacy-table-toolbar">
                         <label>
                             Show{' '}
-                            <select defaultValue="25">
+                            <select
+                                value={pageSize}
+                                onChange={(event) =>
+                                    setPageSize(Number(event.target.value))
+                                }
+                            >
+                                <option>10</option>
                                 <option>25</option>
+                                <option>50</option>
+                                <option>100</option>
                             </select>{' '}
                             entries
                         </label>
+                        <div className="legacy-bulk-actions">
+                            <button
+                                type="button"
+                                onClick={() => setAllVisible(true)}
+                            >
+                                Select visible
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setAllVisible(false)}
+                            >
+                                Clear visible
+                            </button>
+                        </div>
                         <label>
                             Search:{' '}
                             <input
@@ -125,8 +224,9 @@ export default function RenewalsIndex({
                         </label>
                     </div>
                     <p>
-                        Showing {rows.length === 0 ? 0 : 1} to {rows.length} of{' '}
-                        {renewals.length} Customers
+                        Showing {visibleRows.length === 0 ? 0 : 1} to{' '}
+                        {visibleRows.length} of {rows.length} matching renewal
+                        records. {selectedCount} selected.
                     </p>
                     <table className="legacy-table">
                         <thead>
@@ -147,7 +247,7 @@ export default function RenewalsIndex({
                                     </td>
                                 </tr>
                             ) : (
-                                rows.map((renewal) => {
+                                visibleRows.map((renewal) => {
                                     const index = form.data.renewals.findIndex(
                                         (item) => item.id === renewal.id,
                                     );

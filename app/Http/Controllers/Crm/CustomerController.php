@@ -16,10 +16,16 @@ class CustomerController extends Controller
     {
         abort_unless($request->user()->isStaff(), 403);
 
+        $status = $request->string('status')->toString();
+        $allowedStatuses = ['lead', 'active', 'inactive', 'suspended'];
+
         return Inertia::render('customers/index', [
-            'customers' => Customer::withCount('domainHostingRequests')
+            'customers' => Customer::query()
+                ->when(in_array($status, $allowedStatuses, true), fn ($query) => $query->where('status', $status))
+                ->withCount('domainHostingRequests')
                 ->latest()
                 ->get(),
+            'statusFilter' => in_array($status, $allowedStatuses, true) ? $status : null,
         ]);
     }
 

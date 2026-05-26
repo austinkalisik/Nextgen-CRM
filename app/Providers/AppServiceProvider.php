@@ -53,6 +53,10 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureMailFromSettings(): void
     {
+        if (app()->runningInConsole() && ! app()->runningUnitTests()) {
+            return;
+        }
+
         try {
             if (! Schema::hasTable('system_settings')) {
                 return;

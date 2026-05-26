@@ -12,6 +12,14 @@ The CRM covers customer records, service requests, domain hosting, .pg registrat
 - Tailwind CSS/shadcn UI
 - PHPUnit
 
+## Requirements
+
+- PHP 8.3 or newer
+- Composer
+- Node.js 22 or newer
+- npm
+- MySQL 8 or compatible
+
 ## Project Assets
 
 - Premium UI concept: `docs/premium-crm-concept.png`
@@ -26,30 +34,48 @@ git clone https://github.com/austinkalisik/Nextgen-CRM.git
 cd Nextgen-CRM
 ```
 
-## Install
+## Quick Start
 
-```bash
-composer install
-npm install
-copy .env.example .env
-php artisan key:generate
-```
-
-On macOS/Linux use:
-
-```bash
-cp .env.example .env
-```
-
-## Database
-
-Create a MySQL database:
+Create the database first:
 
 ```sql
 CREATE DATABASE nextgen_crm_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-Update `.env`:
+Install and prepare the app on Windows:
+
+```powershell
+composer install
+npm install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+npm run build
+php artisan serve --host=127.0.0.1 --port=8001
+```
+
+Install and prepare the app on macOS/Linux:
+
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+npm run build
+php artisan serve --host=127.0.0.1 --port=8001
+```
+
+Open:
+
+```text
+http://127.0.0.1:8001/login
+```
+
+## Environment
+
+The default `.env.example` expects this local database. If your MySQL username,
+password, host, or port differ, update `.env`:
 
 ```env
 APP_NAME="NextGen CRM"
@@ -61,12 +87,6 @@ DB_PORT=3306
 DB_DATABASE=nextgen_crm_app
 DB_USERNAME=root
 DB_PASSWORD=
-```
-
-Run migrations and seed demo data:
-
-```bash
-php artisan migrate:fresh --seed
 ```
 
 ## Demo Logins
@@ -87,17 +107,10 @@ customer@nextgenpng.net
 
 ## Run Locally
 
-Build production assets:
+After setup, run the built app:
 
 ```bash
-npm run build
 php artisan serve --host=127.0.0.1 --port=8001
-```
-
-Open:
-
-```text
-http://127.0.0.1:8001/login
 ```
 
 For active frontend development, use two terminals:

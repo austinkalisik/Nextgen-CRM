@@ -61,7 +61,7 @@ export default function Dashboard({ metrics, customers }: Props) {
                     title="Total Suspended Customers"
                     value={metrics.suspendedCustomers}
                     icon={UserX}
-                    href="/customers"
+                    href="/customers?status=suspended"
                 />
                 <Stat
                     color="blue"
@@ -86,9 +86,21 @@ export default function Dashboard({ metrics, customers }: Props) {
                         <button
                             type="button"
                             className="minimize"
-                            aria-label="Collapse customer listing"
+                            aria-expanded={!collapsed}
+                            aria-label={
+                                collapsed
+                                    ? 'Expand customer listing'
+                                    : 'Collapse customer listing'
+                            }
+                            title={
+                                collapsed
+                                    ? 'Expand customer listing'
+                                    : 'Collapse customer listing'
+                            }
                             onClick={() => setCollapsed((value) => !value)}
-                        />
+                        >
+                            {collapsed ? '+' : '-'}
+                        </button>
                         <Link href="/customers" aria-label="Open customers" />
                     </div>
                 </div>

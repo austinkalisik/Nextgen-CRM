@@ -63,7 +63,7 @@ export default function AdminSettings({ users, settings }: Props) {
                             type="button"
                             onClick={() => setCollapsed((value) => !value)}
                         >
-                            Admin Actions ▾
+                            Admin Actions v
                         </button>
                         {!collapsed && (
                             <div>

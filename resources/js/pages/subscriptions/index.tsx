@@ -1,5 +1,13 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FileText, Pencil, Plus, ReceiptText, RotateCcw } from 'lucide-react';
+import {
+    ChevronsLeft,
+    ChevronsRight,
+    FileText,
+    Pencil,
+    Plus,
+    ReceiptText,
+    RotateCcw,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { Customer, CustomerSubscription } from '@/types';
@@ -37,6 +45,8 @@ export default function SubscriptionsIndex({
     const [creditTarget, setCreditTarget] =
         useState<CustomerSubscription | null>(null);
     const [search, setSearch] = useState('');
+    const [formCollapsed, setFormCollapsed] = useState(false);
+    const [registerCollapsed, setRegisterCollapsed] = useState(false);
 
     const subscriptionForm = useForm({ ...emptySubscription });
     const paymentForm = useForm({
@@ -183,7 +193,15 @@ export default function SubscriptionsIndex({
                 ))}
             </section>
 
-            <section className="legacy-subscription-layout">
+            <section
+                className={[
+                    'legacy-subscription-layout',
+                    formCollapsed ? 'form-collapsed' : '',
+                    registerCollapsed ? 'register-collapsed' : '',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
                 <form
                     onSubmit={saveSubscription}
                     className="legacy-panel legacy-subscription-form"
@@ -195,6 +213,25 @@ export default function SubscriptionsIndex({
                                 : 'Create Subscription'}
                         </span>
                         <div className="legacy-panel-tools">
+                            <button
+                                type="button"
+                                className="legacy-tool-button"
+                                aria-expanded={!formCollapsed}
+                                title={
+                                    formCollapsed
+                                        ? 'Expand create subscription form'
+                                        : 'Collapse create subscription form'
+                                }
+                                onClick={() =>
+                                    setFormCollapsed((value) => !value)
+                                }
+                            >
+                                {formCollapsed ? (
+                                    <ChevronsRight size={13} />
+                                ) : (
+                                    <ChevronsLeft size={13} />
+                                )}
+                            </button>
                             {editingId && (
                                 <button
                                     type="button"
@@ -210,7 +247,13 @@ export default function SubscriptionsIndex({
                             )}
                         </div>
                     </div>
-                    <div className="legacy-panel-body">
+                    <div
+                        className={
+                            formCollapsed
+                                ? 'legacy-panel-body hidden'
+                                : 'legacy-panel-body'
+                        }
+                    >
                         <label className="legacy-field">
                             <span>Client</span>
                             <select
@@ -403,9 +446,30 @@ export default function SubscriptionsIndex({
                                     setSearch(event.target.value)
                                 }
                             />
+                            <button
+                                type="button"
+                                className="legacy-tool-button"
+                                aria-expanded={!registerCollapsed}
+                                title={
+                                    registerCollapsed
+                                        ? 'Expand subscription register'
+                                        : 'Collapse subscription register'
+                                }
+                                onClick={() =>
+                                    setRegisterCollapsed((value) => !value)
+                                }
+                            >
+                                {registerCollapsed ? '+' : '-'}
+                            </button>
                         </div>
                     </div>
-                    <div className="legacy-panel-body">
+                    <div
+                        className={
+                            registerCollapsed
+                                ? 'legacy-panel-body hidden'
+                                : 'legacy-panel-body legacy-subscription-table-wrapper'
+                        }
+                    >
                         <table className="legacy-table legacy-subscription-table">
                             <thead>
                                 <tr>

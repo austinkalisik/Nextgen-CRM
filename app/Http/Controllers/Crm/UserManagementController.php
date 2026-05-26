@@ -8,7 +8,6 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,7 +26,7 @@ class UserManagementController extends Controller
 
     public function legacySettings(Request $request): Response
     {
-        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($request->user()->isStaff(), 403);
 
         return Inertia::render('admin-settings/index', [
             'users' => User::whereIn('role', ['admin', 'staff'])->latest()->get(),
@@ -40,14 +39,14 @@ class UserManagementController extends Controller
                 'mail_username' => SystemSetting::getValue('mail_username', (string) config('mail.mailers.smtp.username', '')),
                 'send_email_user_ids' => json_decode(SystemSetting::getValue('send_email_user_ids', '[]') ?? '[]', true),
                 'brand_name' => SystemSetting::getValue('brand_name', config('app.name')),
-                'brand_logo_url' => SystemSetting::getValue('brand_logo_url', ''),
+                'brand_logo_url' => SystemSetting::getBrandLogoUrl() ?? '',
             ],
         ]);
     }
 
     public function updateLegacySettings(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($request->user()->isStaff(), 403);
 
         $data = $request->validate([
             'email_from_address' => ['required', 'email', 'max:255'],
@@ -60,7 +59,18 @@ class UserManagementController extends Controller
             'send_email_user_ids' => ['array'],
             'send_email_user_ids.*' => ['integer', 'exists:users,id'],
             'brand_name' => ['required', 'string', 'max:80'],
-            'brand_logo' => ['nullable', 'image', 'max:2048'],
+            'brand_logo' => [
+                'nullable',
+                'file',
+                'max:2048',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $extension = strtolower((string) $value?->getClientOriginalExtension());
+
+                    if (! in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+                        $fail('The brand logo must be a JPG, PNG, GIF, or WebP image.');
+                    }
+                },
+            ],
         ]);
 
         SystemSetting::setValue('email_from_address', (string) $data['email_from_address']);
@@ -79,7 +89,7 @@ class UserManagementController extends Controller
 
         if ($request->hasFile('brand_logo')) {
             $path = $request->file('brand_logo')->store('branding', 'public');
-            SystemSetting::setValue('brand_logo_url', Storage::disk('public')->url($path));
+            SystemSetting::setValue('brand_logo_url', route('branding.logo', ['filename' => basename($path)], false));
         }
 
         return back()->with('success', 'Admin settings saved.');
@@ -124,7 +134,7 @@ class UserManagementController extends Controller
      */
     private function validated(Request $request, ?User $user = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
             'phone' => ['nullable', 'string', 'max:50'],
@@ -133,5 +143,13 @@ class UserManagementController extends Controller
             'is_active' => ['boolean'],
             'password' => [$user ? 'nullable' : 'required', 'string', 'min:8'],
         ]);
+
+        $data['is_active'] = $request->boolean('is_active');
+
+        if ($data['role'] !== 'customer') {
+            $data['customer_id'] = null;
+        }
+
+        return $data;
     }
 }

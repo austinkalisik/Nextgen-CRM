@@ -17,4 +17,26 @@ class SystemSetting extends Model
     {
         static::query()->updateOrCreate(['key' => $key], ['value' => $value]);
     }
+
+    public static function getBrandLogoUrl(): ?string
+    {
+        $value = static::getValue('brand_logo_url');
+
+        if (blank($value)) {
+            return null;
+        }
+
+        $path = parse_url($value, PHP_URL_PATH) ?: $value;
+        $filename = basename($path);
+
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            return null;
+        }
+
+        if (str_contains($path, '/storage/branding/') || str_contains($path, 'branding/')) {
+            return route('branding.logo', ['filename' => $filename], false);
+        }
+
+        return $value;
+    }
 }

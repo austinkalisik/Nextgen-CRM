@@ -262,6 +262,34 @@ class CrmTest extends TestCase
             );
     }
 
+    public function test_staff_can_filter_customer_listing_to_suspended_customers(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+
+        Customer::create([
+            'company_name' => 'Active Client',
+            'contact_name' => 'Active Contact',
+            'email' => 'active-client@example.com',
+            'status' => 'active',
+        ]);
+        Customer::create([
+            'company_name' => 'Suspended Client',
+            'contact_name' => 'Suspended Contact',
+            'email' => 'suspended-client@example.com',
+            'status' => 'suspended',
+        ]);
+
+        $this->actingAs($staff)
+            ->get('/customers?status=suspended')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('customers/index')
+                ->where('statusFilter', 'suspended')
+                ->where('customers.0.company_name', 'Suspended Client')
+                ->missing('customers.1')
+            );
+    }
+
     public function test_staff_can_create_client_subscription(): void
     {
         $staff = User::factory()->create(['role' => 'staff']);
